@@ -383,8 +383,49 @@ def dhcp_tftp_get_config():
                          % (dnsmasq_command))
                 # print dnsmasq_command
 
-    vlog.info("dhcp_tftp_debug - dnsmasq_command(2) %s "
+    tftp_value = None
+    protocols_value = None
+    # Get the source ip selection config
+    for ovs_rec in idl.tables[SYSTEM_TABLE].rows.itervalues():
+        if ovs_rec.other_config and ovs_rec.other_config is not None:
+            for key, value in ovs_rec.other_config.iteritems():
+                if value and value is not None:
+                    if key == 'tftp_source':
+                        tftp_value = value
+                    if key == 'protocols_source':
+                        protocols_value = value
+
+    value = protocols_value
+    if tftp_value is not None:
+        value = tftp_value
+
+    if value is not None:
+        if validate_ipv4_address(value) == True:
+            dnsmasq_command = dnsmasq_command + ' -a ' + value
+        else:
+            dnsmasq_command = dnsmasq_command + ' -i ' + value
+
+        vlog.dbg("dhcp_tftp_debug - dnsmasq cmd %s "
+                 % (dnsmasq_command))
+        #print dnsmasq_command
+
+    vlog.info("dhcp_tftp_debug -dnsmasq_command(2) %s "
               % (dnsmasq_command))
+
+
+# ------------------ to validate IPv4 address ----------
+
+def validate_ipv4_address(address):
+    byte = address.split('.')
+    if len(byte) != 4:
+        return False
+    for octet in byte:
+        if not octet.isdigit():
+            return False
+        digits = int(octet)
+        if digits < 0 or digits > 255:
+            return False
+    return True
 
 
 # ------------------ dnsmasq_start_process() ----------
