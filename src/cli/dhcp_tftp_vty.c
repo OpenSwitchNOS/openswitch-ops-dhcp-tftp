@@ -28,6 +28,8 @@
 #include <setjmp.h>
 #include <sys/wait.h>
 #include <pwd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -850,6 +852,20 @@ static int tftp_server_secure_enable_disable(bool enable)
 
 }
 
+static int validate_tftp_server_path(const char *path)
+{
+    struct stat sb;
+
+    /* Check for Absolute path */
+    if (path != NULL && path[0] == '/') {
+        /* Check if path exists and is a directory */
+        if ((stat(path, &sb) == 0) && ((sb.st_mode & S_IFMT) == S_IFDIR)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int tftp_server_path_config(const char *path, bool add)
 {
     const struct ovsrec_system *ovs_row = NULL;
@@ -858,6 +874,15 @@ static int tftp_server_path_config(const char *path, bool add)
     char *curr_path;
 
     enum ovsdb_idl_txn_status status;
+
+    if (add && !validate_tftp_server_path(path)) {
+        vty_out(vty, "The directory \"%s\" does not exist. "
+                "Please configure a valid absolute path.%s",
+                path, VTY_NEWLINE);
+        VLOG_ERR("The directory \"%s\" does not exist for "
+                  "tftp-server path configuration.", path);
+        return CMD_ERR_NOTHING_TODO;
+    }
 
     /*
      * OPS_TODO:

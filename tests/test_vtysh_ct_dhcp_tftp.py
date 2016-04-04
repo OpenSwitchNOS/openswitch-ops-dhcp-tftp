@@ -839,12 +839,12 @@ class dhcp_tftpCLItest(OpsVsiTest):
         s1 = self.net.switches[0]
         s1.cmdCLI("configure terminal")
         s1.cmdCLI("tftp-server")
-        s1.cmdCLI("path /etc/testfile")
+        s1.cmdCLI("path /etc")
 
         dump = s1.cmdCLI("do show tftp-server")
         lines = dump.split('\n')
         for line in lines:
-            if "TFTP server file path : /etc/testfile" in line:
+            if "TFTP server file path : /etc" in line:
                 tftp_path = True
 
         assert tftp_path == True, 'Test to add tftp path ' \
@@ -876,13 +876,34 @@ class dhcp_tftpCLItest(OpsVsiTest):
             elif (prev_line3 + 1 == i) and (tftp_server_present == True) \
             and (enable_present == True) \
             and (secure_mode_present == True):
-                    if "path /etc/testfile" in line:
+                    if "path /etc" in line:
                         tftp_path_present = True
 
         assert tftp_path_present == True, \
             'Test to add tftp path ' \
             'failed for "show running-config" ' \
             'output -FAILED!'
+
+        tftp_non_dir_path = False
+        dump = s1.cmdCLI('path /var/lib/image.manifest')
+
+        if "The directory \"/var/lib/image.manifest\" does not exist. " \
+        "Please configure a valid absolute path.\n" in dump:
+            tftp_non_dir_path = True
+
+        assert tftp_non_dir_path == True, 'Test to add tftp path failed ' \
+                               'TFTP-server configured with invalid path'
+
+        tftp_relative_path = False
+        dump = s1.cmdCLI('path etc/testfile')
+
+        if "The directory \"etc/testfile\" does not exist. " \
+        "Please configure a valid absolute path.\n" in dump:
+            tftp_relative_path = True
+
+        assert tftp_relative_path == True, \
+            'Test to add tftp path failed ' \
+            'TFTP-server configured with invalid path'
 
         return True
 
@@ -1043,7 +1064,7 @@ class dhcp_tftpCLItest(OpsVsiTest):
                 tftp_server = True
             if "TFTP server secure mode : Enabled" in line:
                 tftp_secure = True
-            if "TFTP server file path : /etc/testfile" in line:
+            if "TFTP server file path : /etc" in line:
                 tftp_path = True
         if tftp_server is True \
         and tftp_secure is True \
@@ -1083,7 +1104,7 @@ class dhcp_tftpCLItest(OpsVsiTest):
             elif (prev_line3 + 1 == i) and (tftp_server_present == True) \
             and (enable_present == True) \
             and (secure_mode_present == True):
-                if "path /etc/testfile" in line:
+                if "path /etc" in line:
                     tftp_path_present = True
 
         if tftp_server_present is True \

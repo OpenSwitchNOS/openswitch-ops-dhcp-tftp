@@ -1200,7 +1200,9 @@ Single switch topology
 Add the TFTP server root path.
 Run command:
 ```
-root(config-tftp-server)# path /etc/testfile
+root(config-tftp-server)# path /etc
+root(config-tftp-server)# path /var/lib/image.manifest
+root(config-tftp-server)# path etc/testfile
 ```
 ##### Test result criteria
 ###### Test pass criteria
@@ -1214,7 +1216,23 @@ TFTP server configuration
 -------------------------
 TFTP server : Enabled
 TFTP server secure mode : Enabled
-TFTP server file path : /etc/testfile
+TFTP server file path : /etc
+```
+Run command:
+```
+root(config-tftp-server)# path /var/lib/image.manifest
+```
+Command output:
+```
+The directory "/var/lib/image.manifest" does not exist. Please configure a valid absolute path.
+```
+Run command
+```
+root(config-tftp-server)# path etc/testfile
+```
+Command output:
+```
+The directory "etc/testfile" does not exist. Please configure a valid absolute path.
 ```
 ###### Test fail criteria
 
@@ -1242,7 +1260,7 @@ TFTP server configuration
 -------------------------
 TFTP server : Enabled
 TFTP server secure mode : Enabled
-TFTP server file path : /etc/testfile
+TFTP server file path : /etc
 ```
 ###### Test fail criteria
 
@@ -1756,7 +1774,7 @@ TFTP server configuration
 -------------------------
 TFTP server : Enabled
 TFTP server secure mode : Disabled
-TFTP server file path : /etc/testfile
+TFTP server file path : /etc
 ```
 ###### Test fail criteria
 

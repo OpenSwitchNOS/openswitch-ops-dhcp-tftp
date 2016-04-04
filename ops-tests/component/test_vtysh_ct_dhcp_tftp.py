@@ -627,12 +627,12 @@ def test_dhcp_tftp(topology, step):  # noqa
 
     step("### Test to add tftp path ###")
     tftp_path = False
-    sw1('path /etc/testfile'.format(**locals()))
+    sw1('path /etc'.format(**locals()))
 
     dump = sw1('do show tftp-server'.format(**locals()))
     lines = dump.split('\n')
     for line in lines:
-        if "TFTP server file path : /etc/testfile" in line:
+        if "TFTP server file path : /etc" in line:
             tftp_path = True
 
     assert tftp_path, 'Test to add tftp path ' \
@@ -643,12 +643,36 @@ def test_dhcp_tftp(topology, step):  # noqa
     dump = sw1('do show running-config'.format(**locals()))
     lines = dump.split('\n')
     for line in lines:
-        if "path /etc/testfile" in line:
+        if "path /etc" in line:
             tftp_path_present = True
 
     assert tftp_path_present, 'Test to add tftp path ' \
                               'failed for "show running-config" ' \
                               'output -FAILED!'
+
+    tftp_non_directory_path = False
+    dump = sw1('path /var/lib/image.manifest'.format(**locals()))
+
+    lines = dump.split('\n')
+    for line in lines:
+        if "The directory \"/var/lib/image.manifest\" does not exist. " \
+           "Please configure a valid absolute path." in line:
+            tftp_non_directory_path = True
+
+    assert tftp_non_directory_path == True, 'Test to add tftp path failed ' \
+                               'TFTP-server configured with invalid path'
+
+    tftp_relative_path = False
+    dump = sw1('path etc/testfile'.format(**locals()))
+
+    lines = dump.split('\n')
+    for line in lines:
+        if "The directory \"etc/testfile\" does not exist. " \
+           "Please configure a valid absolute path." in line:
+            tftp_relative_path = True
+
+    assert tftp_relative_path == True, 'Test to add tftp path failed ' \
+                               'TFTP-server configured with invalid path'
 
     step("### Test to show dhcp server configuration ###")
     range_present = False
@@ -791,7 +815,7 @@ def test_dhcp_tftp(topology, step):  # noqa
             tftp_server = True
         if "TFTP server secure mode : Enabled" in line:
             tftp_secure = True
-        if "TFTP server file path : /etc/testfile" in line:
+        if "TFTP server file path : /etc" in line:
             tftp_path = True
 
     if tftp_server is True \
@@ -829,7 +853,7 @@ def test_dhcp_tftp(topology, step):  # noqa
                 prev_line3 = i
         elif (prev_line3 + 1 == i) and tftp_server_present \
                 and enable_present and secure_mode_present:
-            if "path /etc/testfile" in line:
+            if "path /etc" in line:
                 tftp_path_present = True
 
     if tftp_server_present is True \
