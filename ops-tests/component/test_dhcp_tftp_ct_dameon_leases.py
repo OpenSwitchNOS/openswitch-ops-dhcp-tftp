@@ -311,3 +311,36 @@ def test_vtysh_dhcp_tftp(topology, step):
     dump = sw1("do show dhcp-server leases")
     assert "11:22:33:44:55:66" not in dump and "20.0.0.200" not in \
         dump and "test_s1_new" not in dump
+
+    step('### Test to add DHCP v6 leases information ###')
+    sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
+    sw1("dhcp_leases add \
+        01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20 \
+        20:1::1:241 test_v6_s1",
+        shell='bash')
+    dump = sw1("do show dhcp-server leases")
+    assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
+         in dump and "20:1::1:241" in dump and \
+        "test_v6_s1" in dump
+
+    step('### Test to modify DHCP v6 leases information ###')
+    sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
+    sw1("dhcp_leases old \
+        01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20 \
+        20:1::1:242 test_v6_s1_new",
+        shell='bash')
+    dump = sw1("do show dhcp-server leases")
+    assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
+        in dump and "20:1::1:242" in dump and \
+        "test_v6_s1_new" in dump
+
+    step('### Test to delete DHCP v6 leases information ###')
+    sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
+    sw1("dhcp_leases del \
+        01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20 \
+        20:1::1:242 test_v6_s1_new",
+        shell='bash')
+    dump = sw1("do show dhcp-server leases")
+    assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
+        not in dump and "20:1::1:242" not in \
+        dump and "test_v6_s1_new" not in dump

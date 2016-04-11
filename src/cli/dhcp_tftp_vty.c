@@ -254,7 +254,7 @@ static int show_dhcp_leases(void)
             if (fscanf(leasestream, "%s %s %s %s",
                        mac_addr, ip_addr, hostname, client_id) != 4) {
                 /*
-                 * We should always have mac_addr, ip_addr, hostname and
+                 * We should always have mac_addr/DUID, ip_addr, hostname and
                  * client-id for each entry in leases db. If not, log error
                  * and break out of the loop.
                  */
@@ -265,12 +265,14 @@ static int show_dhcp_leases(void)
             }
 
             if (print_header) {
-                vty_out(vty, "Expiry Time                MAC Address   "
-                             "      IP Address                   "
+                vty_out(vty, "Expiry Time                MAC Address/DUID     "
+                             "                                        "
+                             "   IP Address                "
                              "                 Hostname and Client-id%s",
                               VTY_NEWLINE);
-                vty_out(vty, "-----------------------------------------"
-                             "-----------------------------------"
+                vty_out(vty, "---------------------------------------"
+                             "---------------------------------------"
+                             "---------------------------------------"
                              "---------------------------------------%s",
                               VTY_NEWLINE);
                 print_header = 0;
@@ -285,7 +287,7 @@ static int show_dhcp_leases(void)
                 expiry_str[length] = '\0';
             }
 
-            vty_out(vty, "%-26s %-19s %-45s %s       %s%s",
+            vty_out(vty, "%-26s %-63s %-45s %s       %s%s",
                           expiry_str, mac_addr, ip_addr,
                           hostname, client_id,
                           VTY_NEWLINE);
