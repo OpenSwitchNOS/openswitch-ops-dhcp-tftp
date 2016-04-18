@@ -67,6 +67,7 @@ class DHCPLeaseDB(object):
         while not self.idl.run():
             sleep(.1)
 
+
     def find_row_by_mac_addr(self, mac_addr):
         '''
         Walk through the rows in the dhcp lease table (if any)
@@ -150,6 +151,23 @@ class DHCPLeaseDB(object):
             status = self.txn.commit_block()
 
         return row_found, status
+
+    def clear_db(self):
+        '''
+        Delete a all rows from dhcp_lease_db
+        '''
+        ovs_rec = None
+        while True:
+            for ovs_rec in self.idl.tables[DHCP_LEASES_TABLE].rows.itervalues():
+                self.txn = ovs.db.idl.Transaction(self.idl)
+                status = ovs.db.idl.Transaction.UNCHANGED
+                ovs_rec.delete()
+                break
+            else:
+                break
+            status = self.txn.commit_block()
+
+        return status
 
     def close(self):
         self.idl.close()

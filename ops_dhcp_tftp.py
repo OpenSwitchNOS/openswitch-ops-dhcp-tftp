@@ -100,6 +100,7 @@ seqno = 0
 dnsmasq_process = None
 dnsmasq_started = False
 dnsmasq_command = None
+dhcp_range_config = False
 
 # OPS_TODO: Remove the log facility option before final release
 dnsmasq_default_command = ('/usr/bin/dnsmasq --port=0 --user=root '
@@ -184,11 +185,14 @@ def dhcp_tftp_get_config():
     global idl
     global dnsmasq_command
     global dnsmasq_default_command
+    global dhcp_range_config
+    global dnsmasq_started
 
     vrf_row = None
     dhcp_server_rec = None
     dhcpsrv_range_table = None
     ovs_rec = None
+    dhcp_leases_command = None
 
     range_options = None
     static_host_options = None
@@ -205,6 +209,7 @@ def dhcp_tftp_get_config():
 
     # Get the dhcp server ranges config first
     for ovs_rec in idl.tables[DHCP_SERVER_RANGE_TABLE].rows.itervalues():
+        dhcp_range_config = True
         range_options = ""
         if ovs_rec.match_tags and ovs_rec.match_tags is not None:
             tags = ovs_rec.match_tags
@@ -250,6 +255,19 @@ def dhcp_tftp_get_config():
         vlog.dbg("dhcp_tftp_debug - dnsmasq cmd %s "
                  % (dnsmasq_command))
         # print dnsmasq_command
+
+    if dhcp_range_config == False and dnsmasq_started == False:
+        dhcp_leases_command = "/usr/bin/dhcp_leases clear"
+        dnsmasq_process = subprocess.Popen(dhcp_leases_command,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE, shell=True)
+
+        err = dnsmasq_process.stderr.read()
+        print err
+        if err != "":
+           vlog.emer("%s" % (err))
+           vlog.emer("Error with config, dnsmasq failed, command %s" %
+                  (dhcp_leases_command))
 
     # Get the dhcp server static hosts config
     for ovs_rec in idl.tables[DHCP_SERVER_STATIC_HOST_TABLE].rows.itervalues():
