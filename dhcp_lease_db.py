@@ -151,5 +151,22 @@ class DHCPLeaseDB(object):
 
         return row_found, status
 
+    def clear_db(self):
+        '''
+        Delete a all rows from dhcp_lease_db
+        '''
+        ovs_rec = None
+        while True:
+            for ovs_rec in self.idl.tables[DHCP_LEASES_TABLE].rows.itervalues():
+                self.txn = ovs.db.idl.Transaction(self.idl)
+                status = ovs.db.idl.Transaction.UNCHANGED
+                ovs_rec.delete()
+                break
+            else:
+                break
+        status = self.txn.commit_block()
+
+        return status
+
     def close(self):
         self.idl.close()
