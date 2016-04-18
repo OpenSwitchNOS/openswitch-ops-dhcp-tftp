@@ -102,6 +102,19 @@ def dhcp_leases_delete(dhcp_lease_entry):
 
     dhcp_leases.close()
 
+def dhcp_leases_clear_db():
+    '''
+    We need to clear the db if the dhcp config is not present and
+    dnsmasq is starting for the first time
+    '''
+    dhcp_leases = DHCPLeaseDB()
+
+    status = dhcp_leases.clear_db()
+
+    if status != ovs.db.idl.Transaction.SUCCESS:
+        vlog.err("dhcp_leases clear_db failed")
+
+    dhcp_leases.close()
 
 def main():
 
@@ -167,6 +180,8 @@ def main():
         dhcp_leases_update(dhcp_lease_entry)
     elif command == "tftp":
         sys.exit()
+    elif command == "clear":
+        dhcp_leases_clear_db()
     else:
         vlog.err("Invalid command %s to dhcp_leases script.... Exiting"
                  % (command))
