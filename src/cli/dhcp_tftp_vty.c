@@ -124,8 +124,12 @@ bool is_valid_mac_address (char *mac_addr)
 
     while (*mac_addr) {
         if (isxdigit(*mac_addr)) {
+            /* Only accept lowercase */
+            if ((*mac_addr >= 'A') && (*mac_addr <= 'F')) {
+                return false;
+            }
             i++;
-        } else if (*mac_addr == ':' || *mac_addr == '-') {
+        } else if (*mac_addr == ':') {
             if (i == 0 || i / 2 - 1 != j) {
                 break;
             }
@@ -154,7 +158,9 @@ bool  is_mac_addresses_valid (char *mac_addresses_list)
 
     while (token != NULL) {
         if (!is_valid_mac_address(token)) {
-            vty_out(vty, "%s is invalid%s", token, VTY_NEWLINE);
+            vty_out(vty, "%s is invalid, please provide MAC address with "
+                    "format xx:xx:xx:xx:xx:xx in lowercase hex%s",
+                    token, VTY_NEWLINE);
             free(list);
             return false;
 
