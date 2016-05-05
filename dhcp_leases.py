@@ -18,6 +18,7 @@ import argparse
 import os
 import json
 import sys
+import subprocess
 
 import ovs.dirs
 from ovs.db import error
@@ -30,11 +31,11 @@ vlog = ovs.vlog.Vlog("dhcp_leases")
 
 def print_to_stdout(dhcp_lease_entry):
     print "%s %s %s %s %s" % \
-           (dhcp_lease_entry["expiry_time"],
-            dhcp_lease_entry["mac_address"],
-            dhcp_lease_entry["ip_address"],
-            dhcp_lease_entry["client_hostname"],
-            dhcp_lease_entry["client_id"])
+          (dhcp_lease_entry["expiry_time"],
+           dhcp_lease_entry["mac_address"],
+           dhcp_lease_entry["ip_address"],
+           dhcp_lease_entry["client_hostname"],
+           dhcp_lease_entry["client_id"])
 
 
 def dhcp_leases_show():
@@ -65,17 +66,43 @@ def dhcp_leases_show():
 
     dhcp_leases.close()
 
+'''
+Using ovsdb-client as python IDL doesn't scale well for large
+number of leases. But an alternate (better) option is listed in OPS_TODO
+below as this requires more investigation and time. Also, in any case,
+python IDL usage in "update" & "delete" operations have to be replaced
+with one of these options.
+OPS-TODO
+   a) Open a socket
+   b) connect synchronously - bail out if it fails
+   c) send a string which has the formatted transaction
+   d) close the sending side of the socket
+   e) keep receiving synchronously from the socket into a buffer
+      until socket closes from the other side
+   f) parse the buffer using standard Python JSON parser call
+   g) Look at the response and report errors/success/show results
+'''
+
 
 def dhcp_leases_add(dhcp_lease_entry):
 
-    dhcp_leases = DHCPLeaseDB()
+    add_row_cmd = 'ovsdb-client transact \'["dhcp_leases",{"op":"insert", \
+                  "table":"DHCP_Lease", "row":{ "expiry_time":"%s", \
+                  "mac_address":"%s", "ip_address":"%s", \
+                  "client_hostname":"%s", "client_id": "%s" } }]\'' % (
+                  dhcp_lease_entry["expiry_time"],
+                  dhcp_lease_entry["mac_address"],
+                  dhcp_lease_entry["ip_address"],
+                  dhcp_lease_entry["client_hostname"],
+                  dhcp_lease_entry["client_id"])
 
-    row, status = dhcp_leases.insert_row(dhcp_lease_entry)
+    dhcp_leases_insert_process = subprocess.Popen(add_row_cmd,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE,
+                                                  shell=True)
 
-    if status != ovs.db.idl.Transaction.SUCCESS:
-        vlog.err("dhcp_leases insert_row failed")
-
-    dhcp_leases.close()
+    if "error" in dhcp_leases_insert_process.stdout.read():
+        vlog.err("dhcp_leases add_row_cmd failed")
 
 
 def dhcp_leases_update(dhcp_lease_entry):
