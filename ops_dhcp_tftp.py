@@ -475,7 +475,11 @@ def dnsmasq_restart():
     for line in out.splitlines():
         if 'dnsmasq' in line:
             pid = int(line.split(None, 1)[0])
-            os.kill(pid, signal.SIGKILL)
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                vlog.info("dhcp_tftp_debug - unable to kill previous process")
+                pass
 
     # Get the config
     dhcp_tftp_get_config()
