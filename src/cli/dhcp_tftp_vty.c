@@ -478,6 +478,7 @@ static int show_dhcp_options(void)
     size_t i;
     char option_number[8];
     bool print_header = 1;
+    char *option_value;
 
     row = ovsrec_dhcpsrv_option_first(idl);
 
@@ -495,6 +496,8 @@ static int show_dhcp_options(void)
 
     OVSREC_DHCPSRV_OPTION_FOR_EACH(row, idl){
 
+        option_value = NULL;
+
         if (row->option_number) {
             snprintf(option_number, 8, "%ld", row->option_number[0]);
         } else {
@@ -510,10 +513,13 @@ static int show_dhcp_options(void)
             print_header = 0;
         }
 
+        if (row->option_value) {
+            option_value = strtok(row->option_value, ",");
+        }
         vty_out(vty, "%-14s %-17s %-21s %-6s ",
                       option_number,
                       row->option_name ? row->option_name : "*",
-                      row->option_value ? row->option_value : "*",
+                      row->option_value ? option_value : "*",
                       row->ipv6 && *row->ipv6 == 1 ? "True" : "False");
 
         if (row->n_match_tags == 0) {
@@ -528,6 +534,14 @@ static int show_dhcp_options(void)
 
         vty_out(vty,"%s",VTY_NEWLINE);
 
+        if (option_value) {
+            option_value = strtok(NULL, ",");
+            while (option_value) {
+                vty_out(vty, "%32s %-17s ", " ", option_value);
+                vty_out(vty,"%s",VTY_NEWLINE);
+                option_value = strtok(NULL, ",");
+            }
+        }
     }
 
     vty_out(vty, "%s", VTY_NEWLINE);
