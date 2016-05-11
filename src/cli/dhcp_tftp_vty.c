@@ -471,6 +471,51 @@ static int show_dhcp_host(void)
 
 }
 
+static void
+show_dhcp_option_values(const struct ovsrec_dhcpsrv_option *row_o,
+                        const struct ovsrec_dhcpsrv_match *row_m,
+                        char *option_number,
+                        bool print_match)
+{
+    static char *option_value = NULL;
+    char *option_v = NULL;
+    char *option_name = NULL;
+
+    if (!row_o && !row_m) {
+        return;
+    }
+
+    if (row_o) {
+        option_name = row_o->option_name;
+    } else {
+        option_name = row_m->option_name;
+    }
+
+    if (!option_value) {
+        option_v = print_match ? row_m->option_value : row_o->option_value;
+        if (option_v) {
+            option_value = strtok(option_v, ",");
+        }
+        vty_out(vty, "%-14s %-17s %-21s ",
+                option_number,
+                option_name ? option_name : "*",
+                option_value ? option_value : "*");
+        if (print_match) {
+            vty_out(vty, "%s ", row_m->set_tag);
+
+        } else {
+            vty_out(vty, "%-6s ",
+                    row_o->ipv6 && *row_o->ipv6 == 1 ? "True" : "False");
+        }
+    } else {
+        option_value = strtok(NULL, ",");
+        while (option_value) {
+            vty_out(vty, "%32s %-17s ", " ", option_value);
+            vty_out(vty,"%s",VTY_NEWLINE);
+            option_value = strtok(NULL, ",");
+        }
+    }
+}
 
 static int show_dhcp_options(void)
 {
@@ -510,11 +555,7 @@ static int show_dhcp_options(void)
             print_header = 0;
         }
 
-        vty_out(vty, "%-14s %-17s %-21s %-6s ",
-                      option_number,
-                      row->option_name ? row->option_name : "*",
-                      row->option_value ? row->option_value : "*",
-                      row->ipv6 && *row->ipv6 == 1 ? "True" : "False");
+        show_dhcp_option_values(row, NULL, option_number, false);
 
         if (row->n_match_tags == 0) {
             vty_out(vty, "*");
@@ -528,6 +569,7 @@ static int show_dhcp_options(void)
 
         vty_out(vty,"%s",VTY_NEWLINE);
 
+        show_dhcp_option_values(row, NULL, option_number, false);
     }
 
     vty_out(vty, "%s", VTY_NEWLINE);
@@ -574,14 +616,10 @@ static int show_dhcp_match(void)
             print_header = 0;
         }
 
-        vty_out(vty, "%-14s %-17s %-21s %s",
-                      option_number,
-                      row->option_name ? row->option_name : "*",
-                      row->option_value ? row->option_value : "*",
-                      row->set_tag);
+        show_dhcp_option_values(NULL, row, option_number, true);
 
         vty_out(vty,"%s",VTY_NEWLINE);
-
+        show_dhcp_option_values(NULL, row, option_number, true);
     }
 
     vty_out(vty, "%s", VTY_NEWLINE);
