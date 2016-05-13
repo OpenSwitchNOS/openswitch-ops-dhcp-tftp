@@ -344,3 +344,15 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
         not in dump and "20:1::1:242" not in \
         dump and "test_v6_s1_new" not in dump
+
+    step('### Test to clear all DHCP server leases ###')
+    sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
+    sw1("dhcp_leases add 11:22:33:44:55:66 10.0.0.100 test_s1", shell='bash')
+    sw1("dhcp_leases add 21:22:33:44:55:66 10.0.0.200 test_s2", shell='bash')
+    sw1("configure terminal")
+    sw1("dhcp-server")
+    sw1("clear dhcp-server leases")
+    dump = sw1("do show dhcp-server leases")
+    assert "11:22:33:44:55:66" not in dump and "10.0.0.100" not in dump and \
+           "test_s1" not in dump and "21:22:33:44:55:66" not in dump and \
+           "10.0.0.200" not in dump and "test_s2" not in dump
