@@ -3493,6 +3493,23 @@ DEFUN (vtysh_exit_dhcp_server,
    return vtysh_exit (vty);
 }
 
+int clear_dhcp_server_leases() {
+    int status = system(DHCP_LEASE_SCRIPT " clear");
+    if (status < 0) {
+        vty_out(vty, "Clear dhcp-server leases failed%s", VTY_NEWLINE);
+        return CMD_ERR_NOTHING_TODO;
+    }
+    return CMD_SUCCESS;
+}
+
+DEFUN (cli_dhcp_server_clear_leases,
+       cli_dhcp_server_clear_leases_cmd,
+       "clear dhcp-server leases",
+       "Clear DHCP server leases")
+{
+   return clear_dhcp_server_leases();
+}
+
 DEFUN (vtysh_tftp_server,
       vtysh_tftp_server_cmd,
       "tftp-server",
@@ -3638,6 +3655,8 @@ cli_post_init(void)
 
     install_element(DHCP_SERVER_NODE, &cli_dhcp_server_bootp_add_cmd);
     install_element(DHCP_SERVER_NODE, &cli_dhcp_server_bootp_delete_cmd);
+
+    install_element(DHCP_SERVER_NODE, &cli_dhcp_server_clear_leases_cmd);
 
     install_element(TFTP_SERVER_NODE, &cli_tftp_server_enable_cmd);
     install_element(TFTP_SERVER_NODE, &cli_tftp_server_disable_cmd);
