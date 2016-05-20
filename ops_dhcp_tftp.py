@@ -39,6 +39,9 @@ import ovs.daemon
 import ovs.db.idl
 import ovs.unixctl
 import ovs.unixctl.server
+from ops_eventlog import event_log_init
+from ops_eventlog import log_event
+import ops_diagdump
 
 # OVS definitions
 idl = None
@@ -153,6 +156,34 @@ def terminate():
     global exiting
     # Exiting daemon
     exiting = True
+
+
+# ------- ops_dhcp_tftp_diagnostics_handler() -------
+
+def ops_dhcp_tftp_diagnostics_handler(argv):
+    # argv[0] is basic
+    # argv[1] is feature name
+    feature = argv.pop()
+    buff = 'Diagnostic dump response for feature ' + feature + '.\n'
+
+    # Capture the contents of dnsmasq log file
+    with open("/tmp/dnsmasq.log", "r") as log:
+        fbuff = ['Dnsmasq log file\n']
+        fbuff += ['========================================================\n']
+        fbuff += log.readlines()
+
+    for x in fbuff:
+        buff += x
+
+    # Capture the parameters to dnsmasq
+    dnsmasq_param = subprocess.check_output("ps -ef| grep dnsmasq", shell=True,
+                                            env={'LANG':'C'})
+
+    buff = buff + 'Dnsmasq parameters\n'
+    buff = buff + '========================================================\n'
+    buff = buff + dnsmasq_param + '\n'
+
+    return buff
 
 
 # ------------------ dhcp_tftp_init() ----------------
@@ -426,8 +457,12 @@ def dnsmasq_start_process():
         vlog.emer("%s" % (err))
         vlog.emer("Error with config, dnsmasq failed, command %s" %
                   (dnsmasq_command))
+        log_event("DNSMASQ_FAILURE",
+                  ["dnsmasq_command", dnsmasq_command])
     else:
         vlog.info("dhcp_tftp_debug - dnsmasq started")
+        log_event("DNSMASQ_SUCCESS",
+                  ["dnsmasq_command", dnsmasq_command])
 
 
 # ------------------ dnsmasq_run() ----------------
@@ -515,6 +550,8 @@ def main():
     dhcp_tftp_init(remote)
 
     ovs.daemon.daemonize()
+    ovs.daemon.set_pidfile(None)
+    ovs.daemon._make_pidfile()
 
     ovs.unixctl.command_register("exit", "", 0, 0, unixctl_exit, None)
     error, unixctl_server = ovs.unixctl.server.UnixctlServer.create(None)
@@ -526,6 +563,12 @@ def main():
     while dnsmasq_started is False:
         dnsmasq_run()
         sleep(2)
+
+    # Event logging init for DHCP-TFTP server
+    event_log_init("DHCP-TFTP-SERVER")
+
+    # Diags callback init for DHCP-TFTP server
+    ops_diagdump.init_diag_dump_basic(ops_dhcp_tftp_diagnostics_handler)
 
     seqno = idl.change_seqno    # Sequence number when we last processed the db
 
