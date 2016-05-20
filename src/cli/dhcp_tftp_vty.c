@@ -2903,7 +2903,7 @@ DEFUN (cli_dhcp_server_static_host_delete,
 {
     int ret_code = CMD_SUCCESS;
     dhcp_srv_static_host_params_t static_host_params;
-
+    uint32_t lease_duration;
     /* validating ip address */
     if (!is_valid_ip_address((char *)argv[0])) {
         vty_out(vty, "%s is invalid%s",argv[0],VTY_NEWLINE);
@@ -2975,7 +2975,13 @@ DEFUN (cli_dhcp_server_static_host_delete,
     if (argv[5] == NULL) {
         static_host_params.lease_duration = 60;
     } else {
-        static_host_params.lease_duration = atoi(argv[5]);
+        lease_duration = atoi((char *) argv[5]);
+        if (lease_duration == 1 || lease_duration > 65535) {
+            vty_out(vty, \
+            "Lease duration should be 0 for infinite or between 2-65535", VTY_NEWLINE);
+            return CMD_SUCCESS; /* check */
+        }
+        static_host_params.lease_duration = lease_duration;
     }
 
     ret_code = dhcp_server_delete_static_host(&static_host_params);
@@ -3006,7 +3012,7 @@ DEFUN (cli_dhcp_server_static_host_add,
 {
     int ret_code = CMD_SUCCESS;
     dhcp_srv_static_host_params_t static_host_params;
-
+    uint32_t lease_duration;
     /* validating ip address */
     if (!is_valid_ip_address((char *)argv[0])) {
         vty_out(vty, "%s is invalid%s",argv[0],VTY_NEWLINE);
@@ -3075,7 +3081,13 @@ DEFUN (cli_dhcp_server_static_host_add,
         static_host_params.lease_duration = 60;
 
     } else {
-        static_host_params.lease_duration = atoi(argv[5]);
+        lease_duration = atoi((char *) argv[5]);
+        if (lease_duration == 1 || lease_duration > 65535) {
+            vty_out(vty, \
+            "Lease duration should be 0 for infinite or between 2-65535", VTY_NEWLINE);
+            return CMD_SUCCESS; /* check */
+        }
+        static_host_params.lease_duration = lease_duration;
     }
 
     ret_code = dhcp_server_add_static_host(&static_host_params);
@@ -3089,7 +3101,7 @@ DEFUN (cli_dhcp_server_range_delete,
        " end-ip-address (A.B.C.D|X:X::X:X) {static "
        "| set tag TAG-NAME | match tags TAGS "
        "| netmask A.B.C.D | broadcast A.B.C.D | prefix-len <64-128> | "
-       "lease-duration <0-65535>}",
+       "lease-duration 0/<2-65535>}",
        "Remove DHCP server configuration\n"
        "DHCP server IP address range configuration\n"
        "Enter DHCP server IP address range name\n"
@@ -3124,6 +3136,7 @@ DEFUN (cli_dhcp_server_range_delete,
     bool end_ip_ipv6 = false;
     dhcp_srv_range_params_t range_params;
     int ret_code;
+    uint32_t lease_duration;
     if (argv[0] == NULL) {
         vty_out(vty, "Error: Name is not configured%s",VTY_NEWLINE);
         return CMD_ERR_INCOMPLETE;
@@ -3290,7 +3303,13 @@ DEFUN (cli_dhcp_server_range_delete,
     if (argv[9] == NULL) {
         range_params.lease_duration = 60;
     } else {
-        range_params.lease_duration = atoi((char *)argv[9]);
+        lease_duration = atoi((char *) argv[9]);
+        if (lease_duration == 1 || lease_duration > 65535) {
+            vty_out(vty, \
+            "Lease duration should be 0 for infinite or between 2-65535", VTY_NEWLINE);
+            return CMD_SUCCESS; /* check */
+        }
+        range_params.lease_duration = lease_duration;
     }
 
 
@@ -3305,7 +3324,7 @@ DEFUN (cli_dhcp_server_range_add,
        " end-ip-address (A.B.C.D|X:X::X:X) {static "
        "| set tag TAG-NAME | match tags TAGS "
        "| netmask A.B.C.D | broadcast A.B.C.D | prefix-len <64-128> | "
-       "lease-duration <0-65535>}",
+       "lease-duration 0/<2-65535>}",
        "DHCP server IP address range configuration\n"
        "Enter DHCP server IP address range name\n"
        "Start IP address\n"
@@ -3337,6 +3356,8 @@ DEFUN (cli_dhcp_server_range_add,
     bool end_ip_ipv6 = false;
     dhcp_srv_range_params_t range_params;
     int ret_code;
+    uint32_t lease_duration;
+
     if (argv[0] == NULL) {
         vty_out(vty, "Error: Name is not configured%s ",
                       VTY_NEWLINE);
@@ -3503,7 +3524,13 @@ IPv4 %s", VTY_NEWLINE);
     if (argv[9] == NULL) {
         range_params.lease_duration = 60;
     } else {
-        range_params.lease_duration = atoi((char *)argv[9]);
+        lease_duration = atoi((char *) argv[9]);
+        if (lease_duration == 1 || lease_duration > 65535) {
+            vty_out(vty, \
+            "Lease duration should be 0 for infinite or between 2-65535", VTY_NEWLINE);
+            return CMD_SUCCESS; /* check */
+        }
+        range_params.lease_duration = lease_duration;
     }
 
     ret_code = dhcp_server_add_range(&range_params);
