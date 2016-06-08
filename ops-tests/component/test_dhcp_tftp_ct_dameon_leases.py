@@ -145,7 +145,7 @@ def test_vtysh_dhcp_tftp(topology, step):
     if "10.0.0.1" in dump_bash and "10.0.0.254" in dump_bash and \
         "255.0.0.0" in dump_bash and "tag1,tag2,tag3" in dump_bash  \
         and "tag" in dump_bash and "10.255.255.255" in dump_bash and \
-            "60" in dump_bash:
+            ",60" in dump_bash:
             range_in_use = True
     assert range_in_use is False
 
@@ -163,7 +163,7 @@ def test_vtysh_dhcp_tftp(topology, step):
     dump_bash = sw1("ps -ef | grep dnsmasq", shell='bash')
     assert "10.0.0.100" not in dump_bash and "aa:bb:cc:dd:ee:ff" not in \
         dump_bash and "testid" not in dump_bash and "tag1,tag2,tag3" not \
-        in dump_bash and "testname" not in dump_bash and "60" not in \
+        in dump_bash and "testname" not in dump_bash and ",60" not in \
         dump_bash
 
     step('### Test to delete DHCP Option using option name ###')
