@@ -37,6 +37,22 @@ def is_valid_ip_address(ip):
     return True
 
 
+def ip_type(ip):
+    if ip is None:
+        return -2
+    try:
+        socket.inet_pton(socket.AF_INET, ip)
+    except socket.error:
+        try:
+            socket.inet_pton(socket.AF_INET6, ip)
+        except:
+            return -1
+        else:
+            return 1
+    else:
+        return 0
+
+
 def ip2int(ip):
     return struct.unpack("!I", socket.inet_pton(socket.AF_INET, ip))[0]
 
@@ -108,3 +124,43 @@ def in6_is_addr_multicast(ip):
 def in6_is_addr_linklocal(ip):
     return ((ip & 0xfec00000000000000000000000000000) ==
             0xfe800000000000000000000000000000)
+
+
+def is_valid_netmask(netmask):
+    temp = 0
+    i = 0
+    mask = netmask.split(".", 4)
+    mask.reverse()
+    for byte in mask:
+        temp = temp + (int(byte) << (i * 8))
+        i = i + 1
+
+    temp = ~temp + 1
+    if temp < 0:
+        temp = temp + (1 << 32)
+    if ((temp & (temp - 1)) == 0):
+        return True
+
+    return False
+
+
+def is_valid_net(start_ip, end_ip, netmask):
+    start_ip_int = ip2int(start_ip)
+    end_ip_int = ip2int(end_ip)
+    netmask_int = ip2int(netmask)
+
+    if ((start_ip_int & netmask_int) == (end_ip_int & netmask_int)):
+        return True
+    return False
+
+
+def is_valid_broadcast_addr(start_ip, netmask, broadcast_ip):
+    start_ip_int = ip2int(start_ip)
+    netmask_int = ip2int(netmask)
+    broadcast_ip = ip2int(broadcast_ip)
+    expected_broadcast = (start_ip_int | ~netmask_int)
+    if expected_broadcast < 0:
+        expected_broadcast += (1 << 32)
+    if (broadcast_ip == expected_broadcast):
+        return True
+    return False
