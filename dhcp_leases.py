@@ -25,8 +25,6 @@ from ovs.db import error
 from ovs.db import types
 import ovs.db.idl
 from dhcp_lease_db import DHCPLeaseDB
-from ops_eventlog import log_event
-from ops_eventlog import event_log_init
 
 vlog = ovs.vlog.Vlog("dhcp_leases")
 
@@ -105,19 +103,6 @@ def dhcp_leases_add(dhcp_lease_entry):
 
     if "error" in dhcp_leases_insert_process.stdout.read():
         vlog.err("dhcp_leases add_row_cmd failed")
-        log_event("DHCP_LEASE_ADD_FAILED",
-                  ["expiry_time", dhcp_lease_entry["expiry_time"]],
-                  ["mac", dhcp_lease_entry["mac_address"]],
-                  ["ip", dhcp_lease_entry["ip_address"]],
-                  ["host", dhcp_lease_entry["client_hostname"]],
-                  ["client_id", dhcp_lease_entry["client_id"]])
-    else:
-        log_event("DHCP_LEASE_ADD",
-                  ["expiry_time", dhcp_lease_entry["expiry_time"]],
-                  ["mac", dhcp_lease_entry["mac_address"]],
-                  ["ip", dhcp_lease_entry["ip_address"]],
-                  ["host", dhcp_lease_entry["client_hostname"]],
-                  ["client_id", dhcp_lease_entry["client_id"]])
 
 
 def dhcp_leases_update(dhcp_lease_entry):
@@ -129,19 +114,6 @@ def dhcp_leases_update(dhcp_lease_entry):
 
     if status != ovs.db.idl.Transaction.SUCCESS:
         vlog.err("dhcp_leases update_row failed")
-        log_event("DHCP_LEASE_UPDATE_FAILED",
-                  ["expiry_time", dhcp_lease_entry["expiry_time"]],
-                  ["mac", dhcp_lease_entry["mac_address"]],
-                  ["ip", dhcp_lease_entry["ip_address"]],
-                  ["host", dhcp_lease_entry["client_hostname"]],
-                  ["client_id", dhcp_lease_entry["client_id"]])
-    else:
-        log_event("DHCP_LEASE_UPDATE",
-                  ["expiry_time", dhcp_lease_entry["expiry_time"]],
-                  ["mac", dhcp_lease_entry["mac_address"]],
-                  ["ip", dhcp_lease_entry["ip_address"]],
-                  ["host", dhcp_lease_entry["client_hostname"]],
-                  ["client_id", dhcp_lease_entry["client_id"]])
 
     dhcp_leases.close()
 
@@ -154,19 +126,6 @@ def dhcp_leases_delete(dhcp_lease_entry):
 
     if status != ovs.db.idl.Transaction.SUCCESS:
         vlog.err("dhcp_leases delete_row failed")
-        log_event("DHCP_LEASE_DELETE_FAILED",
-                  ["expiry_time", dhcp_lease_entry["expiry_time"]],
-                  ["mac", dhcp_lease_entry["mac_address"]],
-                  ["ip", dhcp_lease_entry["ip_address"]],
-                  ["host", dhcp_lease_entry["client_hostname"]],
-                  ["client_id", dhcp_lease_entry["client_id"]])
-    else:
-        log_event("DHCP_LEASE_DELETE",
-                  ["expiry_time", dhcp_lease_entry["expiry_time"]],
-                  ["mac", dhcp_lease_entry["mac_address"]],
-                  ["ip", dhcp_lease_entry["ip_address"]],
-                  ["host", dhcp_lease_entry["client_hostname"]],
-                  ["client_id", dhcp_lease_entry["client_id"]])
 
     dhcp_leases.close()
 
@@ -237,9 +196,6 @@ def main():
         dhcp_lease_entry["client_id"] = args.client_id
 
     command = args.command
-
-    # Event logging init for DHCP-TFTP server
-    event_log_init("DHCP-TFTP-SERVER")
 
     if command == "init" or command == "show":
         dhcp_leases_show()
