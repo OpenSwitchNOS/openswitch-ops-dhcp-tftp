@@ -14,6 +14,8 @@
 # under the License.
 
 from time import sleep
+from pytest import mark
+
 
 TOPOLOGY = """
 #
@@ -27,6 +29,7 @@ TOPOLOGY = """
 """
 
 
+@mark.gate
 def test_vtysh_dhcp_tftp(topology, step):
     sw1 = topology.get('sw1')
 

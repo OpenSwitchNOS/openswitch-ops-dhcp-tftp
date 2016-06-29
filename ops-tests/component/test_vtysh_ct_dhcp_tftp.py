@@ -27,6 +27,7 @@ TOPOLOGY = """
 """
 
 
+@pytest.mark.gate
 @pytest.mark.skipif(True, reason="Test case is skipped because of the build "
                                  "is allowing to configure TFTP-server with "
                                  "invalid path.")
