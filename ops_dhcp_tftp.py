@@ -293,6 +293,8 @@ def dhcp_tftp_get_config():
                                            stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE, shell=True)
 
+        sleep(5)
+        dnsmasq_process.poll()
         err = dnsmasq_process.stderr.read()
         print err
         if err != "":
@@ -499,7 +501,11 @@ def dnsmasq_restart():
 
     if dnsmasq_process is not None:
         vlog.dbg("dhcp_tftp_debug - killing dnsmasq")
-        dnsmasq_process.kill()
+        try:
+            dnsmasq_process.kill()
+        except OSError:
+            vlog.info("dhcp_tftp_debug - unable to kill dnsmasq process")
+            pass
 
     # Also check if any other dnsmasq process is running and kill
     # This needs to be done as dnsmasq binary forks multiple processes
@@ -530,6 +536,7 @@ def main():
     global idl
     global seqno
     global dnsmasq_started
+    global dnsmasq_process
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--database', metavar="DATABASE",
@@ -579,6 +586,10 @@ def main():
 
         if exiting:
             break
+
+        # Check if dnsmasq process is exited to avoid zombie process
+        if dnsmasq_process is not None:
+            dnsmasq_process.poll()
 
         if seqno == idl.change_seqno:
             poller = ovs.poller.Poller()
