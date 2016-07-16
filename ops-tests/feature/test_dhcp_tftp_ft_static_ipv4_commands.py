@@ -14,7 +14,7 @@
 # under the License.
 
 # The purpose of this test is to test DHCP server address lease
-# configurations for dynamic allocations and verify the
+# configurations for static allocations and verify the
 # allocations in OVSDB and DHCP client interface.
 
 # For this test, we need 2 hosts connected to a switch
@@ -50,11 +50,50 @@ start_ipv4_address_pool1 = "10.0.0.1"
 end_ipv4_address_pool1 = "10.0.0.100"
 start_ipv4_address_pool2 = "20.0.0.1"
 end_ipv4_address_pool2 = "20.0.0.100"
+host1_mac_address = ""
+host2_mac_address = ""
+host1_static_ip_address = "10.0.0.5"
+host2_static_ip_address = "20.0.0.5"
+
+def get_mac_address_of_hosts(h1, h2):
+    print('\### Acquiring the MAC address of the hosts ###\n')
+
+    # Parse the "ifconfig" outputs for interfaces
+    # h1-eth0 and h2-eth0 for hosts 1 and 2
+    # respectively and save the values for MAC
+    # addresses into variables above
+
+    ifconfigmacaddridx = 4
+    ifconfigmacaddrlinenum = 0
+    global host1_mac_address
+    global host2_mac_address
+
+    h1p1 = h1.ports['if01']
+    h2p1 = h2.ports['if01']
+
+    dump = h1("ifconfig {h1p1}".format(**locals()))
+    count = 0
+    lines = dump.split('\n')
+    for line in lines:
+        if count == ifconfigmacaddrlinenum:
+            outstr = line.split()
+            print(outstr)
+            host1_mac_address = outstr[ifconfigmacaddridx]
+        count = count + 1
+
+    dump = h2("ifconfig {h2p1}".format(**locals()))
+    lines = dump.split('\n')
+    count = 0
+    for line in lines:
+        if count == ifconfigmacaddrlinenum:
+            outstr = line.split()
+            host2_mac_address = outstr[ifconfigmacaddridx]
+        count = count +1
 
 
 def configure(sw1):
-    print('\n### Test DHCP server dynamic IPV4 configuration ###\n')
-    print('\n### Configuring dynamic IPV4 address allocation ###\n')
+    print('\n### Test DHCP server static IPV4 configuration ###\n')
+    print('\n### Configuring static IPV4 address allocation ###\n')
 
     sw1p1 = sw1.ports['if01']
     sw1p2 = sw1.ports['if02']
@@ -72,7 +111,6 @@ def configure(sw1):
         ctx.ip_address("20.0.0.1/8")
         ctx.ipv6_address("2001::1/120")
 
-    # FIXME
     sw1("configure terminal")
     sw1("dhcp-server")
     sw1("range host1 start-ip-address %s end-ip-address %s"
@@ -81,26 +119,26 @@ def configure(sw1):
     sw1("range host2 start-ip-address %s end-ip-address %s"
         % (start_ipv4_address_pool2, end_ipv4_address_pool2))
 
+    sw1("static %s match-mac-addresses %s"
+        % (host1_static_ip_address, host1_mac_address))
+
+    sw1("static %s match-mac-addresses %s"
+        % (host2_static_ip_address, host2_mac_address))
+
     sw1("end")
 
-    """with sw1.libs.vtysh.ConfigDhcpServer() as ctx:
-        ctx.range_start_ip_address_end_ip_address("host1",
-                                                  start_ipv4_address_pool1,
-                                                  end_ipv4_address_pool1)
-        ctx.range_start_ip_address_end_ip_address("host2",
-                                                  start_ipv4_address_pool2,
-                                                  end_ipv4_address_pool2)"""
 
-
-def dhcp_server_dynamic_ipv4_pool_config(sw1):
-    print('\n### Verify DHCP server dynamic IPV4 pool config in db ###\n')
+def dhcp_server_static_ipv4_config(sw1):
+    print('\n### Verify DHCP server static ipv4 config in db ###\n')
 
     # Parse "show dhcp-server" output.
     # This section will have all the DHCP server
-    # dynamic IPV4 pool configuration entries.
+    # range and static configuration entries.
     # Then parse line by line to match the contents
+
     dump = sw1.libs.vtysh.show_dhcp_server()
-    sorted(dump.values())
+
+    # Verifying the dhcp server range configuration
     assert (host1_pool == dump['pools'][1]['pool_name'] or
             host1_pool == dump['pools'][0]['pool_name']) and \
         (start_ipv4_address_pool1 == dump['pools'][1]['start_ip'] or
@@ -114,16 +152,24 @@ def dhcp_server_dynamic_ipv4_pool_config(sw1):
         (end_ipv4_address_pool2 == dump['pools'][0]['end_ip'] or
          end_ipv4_address_pool2 == dump['pools'][1]['end_ip'])
 
+    # Verifying the dhcp server static configuration
+    assert (host1_mac_address == dump['static'][1]['mac_address'] or
+            host1_mac_address == dump['static'][0]['mac_address']) and \
+            (host1_static_ip_address == dump['static'][1]['static_ip'] or
+             host1_static_ip_address == dump['static'][0]['static_ip'])
+    assert (host2_mac_address == dump['static'][1]['mac_address'] or
+            host2_mac_address == dump['static'][0]['mac_address']) and \
+            (host2_static_ip_address == dump['static'][1]['static_ip'] or
+             host2_static_ip_address == dump['static'][0]['static_ip'])
 
 def configure_dhcp_client(h1, h2):
     print('\n### Configure DHCP clients for '
-          'dynamic IPV4 address in db ###\n')
+          'static IPV4 address in db ###\n')
     h1p1 = h1.ports['if01']
     h2p1 = h2.ports['if01']
 
     h1("sed -i 's/#timeout 60/timeout 30/g' /etc/dhcp/dhclient.conf")
 
-    # FIXME
     h1("ifconfig -a")
     h1("ip addr del 10.0.0.1/8 dev {h1p1}".format(**locals()))
     h1("dhclient {h1p1}".format(**locals()))
@@ -136,41 +182,28 @@ def configure_dhcp_client(h1, h2):
     h2("sed -i 's/timeout 30/#timeout 60/g' /etc/dhcp/dhclient.conf")
 
 
-def dhcp_client_dynamic_ipv4_address_config(h1, h2, sw1):
+def dhcp_client_static_ipv4_address_config(h1, h2, sw1):
     print('\n### Verify DHCP clients h1 and h2 '
-          'dynamic IPV4 address config in db ###\n')
+          'static IPV4 address config in db ###\n')
     h1p1 = h1.ports['if01']
     h2p1 = h2.ports['if01']
 
-    ifconfighost1macaddr = ""
-    ifconfighost2macaddr = ""
     ifconfighost1ipv4addr = ""
     ifconfighost2ipv4addr = ""
     ifconfigipv4prefixpattern = "inet addr:"
     ifconfigipv4addridx = 1
-    ifconfigmacaddridx = 4
     ifconfigipv4addrlinenum = 1
-    ifconfigmacaddrlinenum = 0
-    dhcpmacaddrhost1 = ""
-    dhcpmacaddrhost2 = ""
-    dhcpmacaddridx = 5
-    dhcpipv4addrhost1 = ""
-    dhcpipv4addrhost2 = ""
-    dhcpipv4addridx = 6
 
     # Parse the "ifconfig" outputs for interfaces
     # h1-eth0 and h2-eth0 for hosts 1 and 2
-    # respectively and save the values for ipaddresses and mac
+    # respectively and save the values for IP
     # addresses into variables above
     dump = h1("ifconfig {h1p1}".format(**locals()))
     host_1_ip_address = dump.split("\n")[1].split()[1][5:]
     lines = dump.split('\n')
     count = 0
     for line in lines:
-        if count == ifconfigmacaddrlinenum:
-            outstr = line.split()
-            ifconfighost1macaddr = outstr[ifconfigmacaddridx]
-        elif count == ifconfigipv4addrlinenum:
+        if count == ifconfigipv4addrlinenum:
             outstr = line.split()
             ifconfighost1ipv4addrtemp1 = outstr[ifconfigipv4addridx]
             ifconfighost1ipv4addrtemp2 = ifconfighost1ipv4addrtemp1.split(':')
@@ -182,10 +215,7 @@ def dhcp_client_dynamic_ipv4_address_config(h1, h2, sw1):
     lines = dump.split('\n')
     count = 0
     for line in lines:
-        if count == ifconfigmacaddrlinenum:
-            outstr = line.split()
-            ifconfighost2macaddr = outstr[ifconfigmacaddridx]
-        elif count == ifconfigipv4addrlinenum:
+        if count == ifconfigipv4addrlinenum:
             outstr = line.split()
             ifconfighost2ipv4addrtemp1 = outstr[ifconfigipv4addridx]
             ifconfighost2ipv4addrtemp2 = ifconfighost2ipv4addrtemp1.split(':')
@@ -198,18 +228,18 @@ def dhcp_client_dynamic_ipv4_address_config(h1, h2, sw1):
     # 1 and 2 respectively are present in the lease dB
     valid_config = 0
     dump = sw1.libs.vtysh.show_dhcp_server_leases()
-    if ifconfighost1macaddr == dump[host_1_ip_address]['mac_address']:
+    if host1_mac_address == dump[host_1_ip_address]['mac_address']:
         dhcpipv4addrhost1 = dump[host_1_ip_address]['ip_address']
         valid_config += 1
         assert dhcpipv4addrhost1 == ifconfighost1ipv4addr
-    if ifconfighost2macaddr == dump[host_2_ip_address]['mac_address']:
+    if host1_mac_address == dump[host_2_ip_address]['mac_address']:
         dhcpipv4addrhost2 = dump[host_2_ip_address]['ip_address']
         valid_config += 1
         assert dhcpipv4addrhost2 == ifconfighost2ipv4addr
     assert valid_config == 2 , "Invalid entry in DHCP Leases Database"
 
 @mark.gate
-def test_ft_dynamic_dhcp_tftp_commands(topology, step):
+def test_ft_static_dhcp_tftp_commands(topology, step):
     sw1 = topology.get('sw1')
     h1 = topology.get('h1')
     h2 = topology.get('h2')
@@ -218,9 +248,10 @@ def test_ft_dynamic_dhcp_tftp_commands(topology, step):
     assert h1 is not None
     assert h2 is not None
 
-    step('\n########## Test DHCP server dynamic '
+    step('\n########## Test DHCP server static '
          'IPV4 configuration ##########\n')
+    get_mac_address_of_hosts(h1, h2)
     configure(sw1)
-    dhcp_server_dynamic_ipv4_pool_config(sw1)
+    dhcp_server_static_ipv4_config(sw1)
     configure_dhcp_client(h1, h2)
-    dhcp_client_dynamic_ipv4_address_config(h1, h2, sw1)
+    dhcp_client_static_ipv4_address_config(h1, h2, sw1)
