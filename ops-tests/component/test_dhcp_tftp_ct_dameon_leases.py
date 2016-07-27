@@ -14,8 +14,6 @@
 # under the License.
 
 from time import sleep
-from pytest import mark
-
 
 TOPOLOGY = """
 #
@@ -29,7 +27,6 @@ TOPOLOGY = """
 """
 
 
-@mark.gate
 def test_vtysh_dhcp_tftp(topology, step):
     sw1 = topology.get('sw1')
 
@@ -55,6 +52,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         dump_bash and "10.255.255.255" in dump_bash and "60" in dump_bash
 
     step('### Test to add DHCP static configuration ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1('static 10.0.0.100 match-mac-addresses aa:bb:cc:dd:ee:ff '
         'set tags tag1,tag2,tag3 lease-duration 60')
 
@@ -68,6 +68,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         and "tag1" and "tag2" and "tag3" in dump_bash and "60" in dump_bash
 
     step('### Test to add DHCP Options using option name ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("option set option-name Router option-value 10.11.12.1 "
         "match tags opt1,opt2,opt3")
 
@@ -81,6 +84,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         "opt1" and "opt2" and "opt3" in dump_bash
 
     step('### Test to add DHCP Options using option number ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("option set option-number 3 option-value 10.10.10.1 "
         "match tags tag4,tag5,tag6")
 
@@ -94,6 +100,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         "tag5" and "tag6" in dump_bash
 
     step('### Test to add DHCP Match using option name ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("match set tag ops_match_name match-option-name Router "
         "match-option-value 10.20.10.1")
 
@@ -107,6 +116,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         "ops_match_name" in dump_bash
 
     step('### Test to add DHCP Match using option number ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("match set tag ops_match_num match-option-number 3 "
         "match-option-value 10.20.20.10")
 
@@ -119,6 +131,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         "ops_match_num" in dump_bash
 
     step('###  Test to add DHCP bootp configurations ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("boot set file /tmp/testfile match tag ops_bootp")
 
     dump = sw1("do show dhcp-server")
@@ -129,6 +144,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert "/tmp/testfile" in dump_bash and "ops_bootp" in dump_bash
 
     step('### Test to delete DHCP dynamic configurations ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no range test-range start-ip-address 10.0.0.1 end-ip-address "
         "10.0.0.254 netmask 255.0.0.0 match tags tag1,tag2,tag3 "
         " set tag test-tag broadcast 10.255.255.255 lease-duration 60")
@@ -153,6 +171,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert range_in_use is False
 
     step('### Test to delete DHCP static configuration ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no static 10.0.0.100 match-mac-addresses aa:bb:cc:dd:ee:ff "
         "set tags tag1,tag2,tag3 match-client-id testid "
         "match-client-hostname testname lease-duration 60")
@@ -170,6 +191,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         dump_bash
 
     step('### Test to delete DHCP Option using option name ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no option set option-name Router option-value 10.11.12.1 "
         "match tags opt1,opt2,opt3")
 
@@ -189,6 +213,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert option_in_use is False
 
     step('### Test to delete DHCP Option using option number ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no option set option-number 3 option-value 10.10.10.1 "
         "match tags tag4,tag5,tag6")
 
@@ -208,6 +235,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert option_in_use is False
 
     step('### Test to delete DHCP match using option name ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no match set tag ops_match_name match-option-name Router "
         "match-option-value 10.20.10.1")
 
@@ -221,6 +251,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         "ops_match_name" not in dump
 
     step('### Test to delete DHCP match using option number ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no match set tag ops_match_num match-option-number 3 "
         "match-option-value 10.20.20.10")
 
@@ -234,6 +267,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         "ops_match_num" not in dump
 
     step('### Test to delete DHCP bootp configuration ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1('dhcp-server')
     sw1("no boot set file /tmp/testfile match tag ops_bootp")
 
     dump = sw1("do show dhcp-server")
@@ -245,7 +281,9 @@ def test_vtysh_dhcp_tftp(topology, step):
         in dump_bash
 
     step('### Test to enable tftp server ###')
-    sw1('exit')
+    # Changing vtysh context because bash command set it back to default
+    # Remove unnecesary command line 'exit'
+    sw1('configure terminal')
     sw1("tftp-server")
     sw1('enable')
     dump = sw1("do show tftp-server")
@@ -256,6 +294,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert "--enable-tftp" in dump
 
     step('### Test to enable tftp server secure mode ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1("tftp-server")
     sw1("secure-mode")
     dump = sw1("do show tftp-server")
     assert "TFTP server secure mode : Enabled" in dump
@@ -265,6 +306,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert "--tftp-secure" in dump
 
     step('### Test to add tftp path ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1("tftp-server")
     sw1("path /tmp/")
     dump = sw1("do show tftp-server")
     assert "TFTP server file path : /tmp/" in dump
@@ -274,6 +318,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert "--tftp-root=/tmp/" in dump
 
     step('### Test to disable tftp server ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1("tftp-server")
     sw1("no enable")
     dump = sw1("do show tftp-server")
     assert "TFTP server : Disabled" in dump
@@ -283,6 +330,9 @@ def test_vtysh_dhcp_tftp(topology, step):
     assert "--enable-tftp" not in dump
 
     step('### Test to disable tftp server secure mode ###')
+    # Changing vtysh context because bash command set it back to default
+    sw1('configure terminal')
+    sw1("tftp-server")
     sw1("no secure-mode")
     dump = sw1("do show tftp-server")
     assert "TFTP server secure mode : Disabled" in dump
@@ -295,7 +345,8 @@ def test_vtysh_dhcp_tftp(topology, step):
     sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
     sw1("dhcp_leases add 11:22:33:44:55:66 10.0.0.100 test_s1",
         shell='bash')
-    dump = sw1("do show dhcp-server leases")
+    # Removing do from command since bash command reseted vtysh context
+    dump = sw1("show dhcp-server leases")
     assert "11:22:33:44:55:66" in dump and "10.0.0.100" in dump and \
         "test_s1" in dump
 
@@ -303,7 +354,7 @@ def test_vtysh_dhcp_tftp(topology, step):
     sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
     sw1("dhcp_leases old 11:22:33:44:55:66 20.0.0.200 test_s1_new",
         shell='bash')
-    dump = sw1("do show dhcp-server leases")
+    dump = sw1("show dhcp-server leases")
     assert "11:22:33:44:55:66" in dump and "20.0.0.200" in dump and \
         "test_s1_new" in dump
 
@@ -311,7 +362,7 @@ def test_vtysh_dhcp_tftp(topology, step):
     sw1("export DNSMASQ_LEASE_EXPIRES=1440976224", shell='bash')
     sw1("dhcp_leases del 11:22:33:44:55:66 20.0.0.200 test_s1_new",
         shell='bash')
-    dump = sw1("do show dhcp-server leases")
+    dump = sw1("show dhcp-server leases")
     assert "11:22:33:44:55:66" not in dump and "20.0.0.200" not in \
         dump and "test_s1_new" not in dump
 
@@ -321,7 +372,7 @@ def test_vtysh_dhcp_tftp(topology, step):
         01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20 \
         20:1::1:241 test_v6_s1",
         shell='bash')
-    dump = sw1("do show dhcp-server leases")
+    dump = sw1("show dhcp-server leases")
     assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
          in dump and "20:1::1:241" in dump and \
         "test_v6_s1" in dump
@@ -332,7 +383,7 @@ def test_vtysh_dhcp_tftp(topology, step):
         01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20 \
         20:1::1:242 test_v6_s1_new",
         shell='bash')
-    dump = sw1("do show dhcp-server leases")
+    dump = sw1("show dhcp-server leases")
     assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
         in dump and "20:1::1:242" in dump and \
         "test_v6_s1_new" in dump
@@ -343,7 +394,7 @@ def test_vtysh_dhcp_tftp(topology, step):
         01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20 \
         20:1::1:242 test_v6_s1_new",
         shell='bash')
-    dump = sw1("do show dhcp-server leases")
+    dump = sw1("show dhcp-server leases")
     assert "01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20" \
         not in dump and "20:1::1:242" not in \
         dump and "test_v6_s1_new" not in dump
